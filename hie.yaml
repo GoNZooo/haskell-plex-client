@@ -1,0 +1,13 @@
+cradle:
+  stack:
+    - path: "./src"
+      component: "plex-client:lib"
+
+    - path: "./app/Main.hs"
+      component: "plex-client:exe:plex-client"
+
+    - path: "./app/Paths_plex_client.hs"
+      component: "plex-client:exe:plex-client"
+
+    - path: "./test"
+      component: "plex-client:test:plex-client-test"
