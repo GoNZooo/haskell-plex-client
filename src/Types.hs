@@ -4,6 +4,7 @@ module Types where
 
 import Qtility
 import RIO.Process (HasProcessContext (..), ProcessContext)
+import qualified RIO.Text as Text
 import Text.XML (Document, Name)
 
 newtype XmlDecodingError = XmlDecodingError {unXmlDecodingError :: SomeException}
@@ -11,19 +12,55 @@ newtype XmlDecodingError = XmlDecodingError {unXmlDecodingError :: SomeException
 
 instance Exception XmlDecodingError
 
-data XmlAttributeDecodingError = XmlAttributeDecodingError
-  { _xmlAttributeDecodingErrorKey :: !String,
-    _xmlAttributeDecodingErrorMap :: !(Map Name Text)
+newtype PlexAttributeKey = PlexAttributeKey {unPlexAttributeKey :: Text}
+  deriving (Show, Eq, Ord)
+
+newtype DoesNotExist = DoesNotExist {unDoesNotExist :: PlexAttributeKey}
+  deriving (Show, Eq, Ord)
+
+data XmlAttributeError = XmlAttributeError
+  { _xmlAttributeErrorMap :: !(Map Name Text),
+    _xmlAttributeErrorType :: !XmlAttributeErrorType
   }
   deriving (Eq, Show)
 
-instance Exception XmlAttributeDecodingError
+instance Exception XmlAttributeError
+
+data XmlAttributeErrorType
+  = DoesNotExistType !DoesNotExist
+  | UnableToDecodeType !UnableToDecode
+  deriving (Eq, Show)
+
+data UnableToDecode = UnableToDecode
+  { _unableToDecodeName :: !Name,
+    _unableToDecodeValue :: !Text,
+    _unableToDecodeReason :: !(Maybe String)
+  }
+  deriving (Eq, Show)
 
 class PlexRequest request response | request -> response where
   executeRequest :: PlexIp -> PlexToken -> request -> IO response
 
-class FromXmlDocument a where
-  fromXmlDocument :: (MonadThrow m) => Document -> m a
+class PlexAttributeRead a where
+  readAttribute :: Text -> Maybe a
+
+instance PlexAttributeRead Text where
+  readAttribute = Just
+
+instance PlexAttributeRead String where
+  readAttribute = Text.unpack >>> Just
+
+instance PlexAttributeRead ByteString where
+  readAttribute = encodeUtf8 >>> Just
+
+instance PlexAttributeRead Int where
+  readAttribute = Text.unpack >>> readMaybe
+
+instance PlexAttributeRead Integer where
+  readAttribute = Text.unpack >>> readMaybe
+
+instance PlexAttributeRead Bool where
+  readAttribute = Text.unpack >>> readMaybe
 
 newtype PlexToken = PlexToken {unPlexToken :: String}
   deriving (Eq, Show, Read, IsString, Generic, FromEnvironmentValue)
@@ -84,7 +121,9 @@ foldMapM
     ''XmlDecodingError,
     ''PlexTimestamp,
     ''PlexPlatform,
-    ''PlexClientIdentifier
+    ''PlexClientIdentifier,
+    ''DoesNotExist,
+    ''PlexAttributeKey
   ]
 
 instance HasLogFunc App where

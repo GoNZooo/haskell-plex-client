@@ -1,10 +1,10 @@
 module Plex.Http where
 
 import Control.Lens.Combinators (plate)
+import Data.Typeable (typeRep)
 import Network.HTTP.Client (Response (..), httpLbs, parseRequest)
 import Network.HTTP.Client.TLS (newTlsManager)
 import Qtility
-import qualified RIO.Text as Text
 import Text.XML
 import Text.XML.Lens
 import Types
@@ -18,42 +18,46 @@ instance PlexRequest GetDevicesRequest GetDevicesResponse where
   executeRequest ip token _request = do
     document <- callRoute ip token "devices"
     let attributes = document ^.. root . named "MediaContainer" . plate . named "Device" . attrs
-    devices <- fromEither $ sequence $ createDevice <$> attributes
-    pure $ GetDevicesResponse devices -- _x <$> (document & documentRoot & elementNodes)
-    where
-      createDevice :: Map Name Text -> Either XmlAttributeDecodingError PlexDevice
-      createDevice attributeMap = do
-        deviceId <- do
-          deviceIdText <-
-            Text.unpack
-              <$> note (XmlAttributeDecodingError "id" attributeMap) (attributeMap ^. at "id")
-          note (XmlAttributeDecodingError "id" attributeMap) $ readMaybe deviceIdText
-        name' <-
-          Text.unpack
-            <$> note (XmlAttributeDecodingError "name" attributeMap) (attributeMap ^. at "name")
-        clientIdentifier <-
-          PlexClientIdentifier
-            <$> note
-              (XmlAttributeDecodingError "clientIdentifier" attributeMap)
-              (attributeMap ^. at "clientIdentifier")
-        createdAt <- do
-          createdAtText <-
-            Text.unpack
-              <$> note
-                (XmlAttributeDecodingError "createdAt" attributeMap)
-                (attributeMap ^. at "createdAt")
-          PlexTimestamp <$> note (XmlAttributeDecodingError "createdAt" attributeMap) (readMaybe createdAtText)
-        platform <-
-          PlexPlatform
-            <$> note (XmlAttributeDecodingError "platform" attributeMap) (attributeMap ^. at "platform")
-        pure $
-          PlexDevice
-            { _plexDeviceId = deviceId,
-              _plexDeviceName = name',
-              _plexDeviceClientIdentifier = clientIdentifier,
-              _plexDeviceCreatedAt = createdAt,
-              _plexDevicePlatform = platform
-            }
+    devices <- fromEither $ sequence $ parseDevice <$> attributes
+    pure $ GetDevicesResponse devices
+
+parseDevice :: Map Name Text -> Either XmlAttributeError PlexDevice
+parseDevice attributeMap = do
+  deviceId <- getAttribute attributeMap "id"
+  name' <- getAttribute attributeMap "name"
+  clientIdentifier <- PlexClientIdentifier <$> getAttribute attributeMap "clientIdentifier"
+  createdAt <- PlexTimestamp <$> getAttribute attributeMap "createdAt"
+  platform <- PlexPlatform <$> getAttribute attributeMap "platform"
+  pure $
+    PlexDevice
+      { _plexDeviceId = deviceId,
+        _plexDeviceName = name',
+        _plexDeviceClientIdentifier = clientIdentifier,
+        _plexDeviceCreatedAt = createdAt,
+        _plexDevicePlatform = platform
+      }
+
+getAttribute ::
+  forall a.
+  (PlexAttributeRead a, Typeable a) =>
+  Map Name Text ->
+  Name ->
+  Either XmlAttributeError a
+getAttribute attributeMap key' = do
+  value <-
+    note
+      ( XmlAttributeError
+          attributeMap
+          (DoesNotExistType $ DoesNotExist (PlexAttributeKey $ nameLocalName key'))
+      )
+      (attributeMap ^. at key')
+  let reason = Just $ mconcat ["Unable to `read` value as ", show $ typeRep (Proxy @a)]
+  note
+    ( XmlAttributeError
+        attributeMap
+        (UnableToDecodeType $ UnableToDecode key' value reason)
+    )
+    $ readAttribute value
 
 callRoute :: (MonadIO m, MonadThrow m) => PlexIp -> PlexToken -> String -> m Document
 callRoute ip token route = do
