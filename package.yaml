@@ -25,6 +25,8 @@ dependencies:
 - http-client
 - http-client-tls
 - xml-conduit
+- xml-lens
+- lens
 
 default-extensions:
 - ApplicativeDo

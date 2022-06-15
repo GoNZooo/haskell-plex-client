@@ -4,14 +4,26 @@ module Types where
 
 import Qtility
 import RIO.Process (HasProcessContext (..), ProcessContext)
+import Text.XML (Document, Name)
 
 newtype XmlDecodingError = XmlDecodingError {unXmlDecodingError :: SomeException}
   deriving (Show)
 
 instance Exception XmlDecodingError
 
+data XmlAttributeDecodingError = XmlAttributeDecodingError
+  { _xmlAttributeDecodingErrorKey :: !String,
+    _xmlAttributeDecodingErrorMap :: !(Map Name Text)
+  }
+  deriving (Eq, Show)
+
+instance Exception XmlAttributeDecodingError
+
 class PlexRequest request response | request -> response where
   executeRequest :: PlexIp -> PlexToken -> request -> IO response
+
+class FromXmlDocument a where
+  fromXmlDocument :: (MonadThrow m) => Document -> m a
 
 newtype PlexToken = PlexToken {unPlexToken :: String}
   deriving (Eq, Show, Read, IsString, Generic, FromEnvironmentValue)
@@ -48,20 +60,12 @@ data App = App
     _appPlexIp :: !PlexIp
   }
 
-data GetDevicesRequest = GetDevicesRequest
-
-newtype GetDevicesResponse = GetDevicesResponse {unGetDevicesResponse :: [PlexDevice]}
-  deriving (Eq, Show)
-
 data PlexDevice = PlexDevice
   { _plexDeviceId :: !Integer,
     _plexDeviceName :: !String,
     _plexDeviceClientIdentifier :: !PlexClientIdentifier
   }
   deriving (Eq, Show)
-
-instance PlexRequest GetDevicesRequest GetDevicesResponse where
-  executeRequest _ip _token _request = undefined
 
 foldMapM makeLenses [''Options, ''App]
 
