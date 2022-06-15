@@ -5,6 +5,7 @@ import Data.Typeable (typeRep)
 import Network.HTTP.Client (Response (..), httpLbs, parseRequest)
 import Network.HTTP.Client.TLS (newTlsManager)
 import Qtility
+import qualified RIO.Text as Text
 import Text.XML
 import Text.XML.Lens
 import Types
@@ -24,10 +25,10 @@ instance PlexRequest GetDevicesRequest GetDevicesResponse where
 parseDevice :: Map Name Text -> Either XmlAttributeError PlexDevice
 parseDevice attributeMap = do
   deviceId <- getAttribute attributeMap "id"
-  name' <- getAttribute attributeMap "name"
+  name' <- (emptyToNothing >>> fmap Text.unpack) <$> getAttribute attributeMap "name"
   clientIdentifier <- PlexClientIdentifier <$> getAttribute attributeMap "clientIdentifier"
   createdAt <- PlexTimestamp <$> getAttribute attributeMap "createdAt"
-  platform <- PlexPlatform <$> getAttribute attributeMap "platform"
+  platform <- (emptyToNothing >>> fmap PlexPlatform) <$> getAttribute attributeMap "platform"
   pure $
     PlexDevice
       { _plexDeviceId = deviceId,
@@ -58,6 +59,19 @@ getAttribute attributeMap key' = do
         (UnableToDecodeType $ UnableToDecode key' value reason)
     )
     $ readAttribute value
+
+emptyToNothing :: Text -> Maybe Text
+emptyToNothing "" = Nothing
+emptyToNothing t = Just t
+
+ensureNonEmpty :: Foldable f => Map Name Text -> Name -> Text -> f a -> Either XmlAttributeError (f a)
+ensureNonEmpty attributeMap key' textValue value
+  | null value =
+    Left $
+      XmlAttributeError
+        attributeMap
+        (UnableToDecodeType $ UnableToDecode key' textValue $ Just "value is empty")
+  | otherwise = Right value
 
 callRoute :: (MonadIO m, MonadThrow m) => PlexIp -> PlexToken -> String -> m Document
 callRoute ip token route = do

@@ -105,10 +105,10 @@ data App = App
 
 data PlexDevice = PlexDevice
   { _plexDeviceId :: !Integer,
-    _plexDeviceName :: !String,
+    _plexDeviceName :: !(Maybe String),
     _plexDeviceClientIdentifier :: !PlexClientIdentifier,
     _plexDeviceCreatedAt :: !PlexTimestamp,
-    _plexDevicePlatform :: !PlexPlatform
+    _plexDevicePlatform :: !(Maybe PlexPlatform)
   }
   deriving (Eq, Show)
 
