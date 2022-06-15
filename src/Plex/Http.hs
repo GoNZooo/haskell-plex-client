@@ -32,9 +32,28 @@ instance PlexRequest GetDevicesRequest GetDevicesResponse where
           Text.unpack
             <$> note (XmlAttributeDecodingError "name" attributeMap) (attributeMap ^. at "name")
         clientIdentifier <-
-          note (XmlAttributeDecodingError "clientIdentifier" attributeMap) $
-            attributeMap ^. at "clientIdentifier"
-        pure $ PlexDevice deviceId name' (PlexClientIdentifier clientIdentifier)
+          PlexClientIdentifier
+            <$> note
+              (XmlAttributeDecodingError "clientIdentifier" attributeMap)
+              (attributeMap ^. at "clientIdentifier")
+        createdAt <- do
+          createdAtText <-
+            Text.unpack
+              <$> note
+                (XmlAttributeDecodingError "createdAt" attributeMap)
+                (attributeMap ^. at "createdAt")
+          PlexTimestamp <$> note (XmlAttributeDecodingError "createdAt" attributeMap) (readMaybe createdAtText)
+        platform <-
+          PlexPlatform
+            <$> note (XmlAttributeDecodingError "platform" attributeMap) (attributeMap ^. at "platform")
+        pure $
+          PlexDevice
+            { _plexDeviceId = deviceId,
+              _plexDeviceName = name',
+              _plexDeviceClientIdentifier = clientIdentifier,
+              _plexDeviceCreatedAt = createdAt,
+              _plexDevicePlatform = platform
+            }
 
 callRoute :: (MonadIO m, MonadThrow m) => PlexIp -> PlexToken -> String -> m Document
 callRoute ip token route = do

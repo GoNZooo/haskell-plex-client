@@ -46,6 +46,12 @@ instance HasPlexIp PlexIp where
 newtype PlexClientIdentifier = PlexClientIdentifier {unPlexClientIdentifier :: Text}
   deriving (Eq, Show, Read, IsString, Generic)
 
+newtype PlexTimestamp = PlexTimestamp {unPlexTimestamp :: Integer}
+  deriving (Eq, Show, Read, Generic)
+
+newtype PlexPlatform = PlexPlatform {unPlexPlatform :: Text}
+  deriving (Eq, Show, Read, IsString, Generic)
+
 -- | Command line arguments
 data Options = Options
   { _optionsVerbose :: !Bool,
@@ -63,13 +69,23 @@ data App = App
 data PlexDevice = PlexDevice
   { _plexDeviceId :: !Integer,
     _plexDeviceName :: !String,
-    _plexDeviceClientIdentifier :: !PlexClientIdentifier
+    _plexDeviceClientIdentifier :: !PlexClientIdentifier,
+    _plexDeviceCreatedAt :: !PlexTimestamp,
+    _plexDevicePlatform :: !PlexPlatform
   }
   deriving (Eq, Show)
 
 foldMapM makeLenses [''Options, ''App]
 
-foldMapM makeWrapped [''PlexToken, ''PlexIp, ''XmlDecodingError]
+foldMapM
+  makeWrapped
+  [ ''PlexToken,
+    ''PlexIp,
+    ''XmlDecodingError,
+    ''PlexTimestamp,
+    ''PlexPlatform,
+    ''PlexClientIdentifier
+  ]
 
 instance HasLogFunc App where
   logFuncL = appLogFunc
