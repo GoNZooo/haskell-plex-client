@@ -19,7 +19,7 @@ instance PlexRequest GetDevicesRequest GetDevicesResponse where
   executeRequest ip token _request = do
     document <- callRoute ip token "devices"
     let attributes = document ^.. root . named "MediaContainer" . plate . named "Device" . attrs
-    devices <- fromEither $ sequence $ parseDevice <$> attributes
+    devices <- fromEither $ traverse parseDevice attributes
     pure $ GetDevicesResponse devices
 
 parseDevice :: Map Name Text -> Either XmlAttributeError PlexDevice
@@ -64,7 +64,13 @@ emptyToNothing :: Text -> Maybe Text
 emptyToNothing "" = Nothing
 emptyToNothing t = Just t
 
-ensureNonEmpty :: Foldable f => Map Name Text -> Name -> Text -> f a -> Either XmlAttributeError (f a)
+ensureNonEmpty ::
+  Foldable f =>
+  Map Name Text ->
+  Name ->
+  Text ->
+  f a ->
+  Either XmlAttributeError (f a)
 ensureNonEmpty attributeMap key' textValue value
   | null value =
     Left $
