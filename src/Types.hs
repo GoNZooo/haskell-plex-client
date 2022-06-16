@@ -5,7 +5,7 @@ module Types where
 import Qtility
 import RIO.Process (HasProcessContext (..), ProcessContext)
 import qualified RIO.Text as Text
-import Text.XML (Document, Name)
+import Text.XML (Name)
 
 newtype XmlDecodingError = XmlDecodingError {unXmlDecodingError :: SomeException}
   deriving (Show)
@@ -37,9 +37,6 @@ data UnableToDecode = UnableToDecode
     _unableToDecodeReason :: !(Maybe String)
   }
   deriving (Eq, Show)
-
-class PlexRequest request response | request -> response where
-  executeRequest :: PlexIp -> PlexToken -> request -> IO response
 
 class PlexAttributeRead a where
   readAttribute :: Text -> Maybe a
@@ -74,6 +71,15 @@ instance HasPlexToken PlexToken where
 newtype PlexIp = PlexIp {unPlexIp :: String}
   deriving (Eq, Show, Read, IsString, Generic, FromEnvironmentValue)
 
+newtype PlexId = PlexId {unPlexId :: Integer}
+  deriving (Eq, Show, Read, Generic, FromEnvironmentValue)
+
+newtype PlexAgent = PlexAgent {unPlexAgent :: String}
+  deriving (Eq, Show, Read, Generic, IsString, FromEnvironmentValue)
+
+newtype PlexScanner = PlexScanner {unPlexScanner :: String}
+  deriving (Eq, Show, Read, Generic, IsString, FromEnvironmentValue)
+
 class HasPlexIp env where
   plexIpL :: Lens' env PlexIp
 
@@ -87,6 +93,9 @@ newtype PlexTimestamp = PlexTimestamp {unPlexTimestamp :: Integer}
   deriving (Eq, Show, Read, Generic)
 
 newtype PlexPlatform = PlexPlatform {unPlexPlatform :: Text}
+  deriving (Eq, Show, Read, IsString, Generic)
+
+newtype PlexKey = PlexKey {unPlexKey :: String}
   deriving (Eq, Show, Read, IsString, Generic)
 
 -- | Command line arguments
@@ -112,7 +121,35 @@ data PlexDevice = PlexDevice
   }
   deriving (Eq, Show)
 
-foldMapM makeLenses [''Options, ''App]
+data PlexLocation = PlexLocation
+  { _plexLocationId :: !PlexId,
+    _plexLocationPath :: !FilePath
+  }
+  deriving (Eq, Show)
+
+data PlexDirectory = PlexDirectory
+  { _plexDirectoryKey :: !PlexKey,
+    _plexDirectoryType :: !PlexDirectoryType,
+    _plexDirectoryThumbnail :: !FilePath,
+    _plexDirectoryTitle :: !Text,
+    _plexDirectoryAgent :: !PlexAgent,
+    _plexDirectoryScanner :: !PlexScanner,
+    _plexDirectoryUuid :: !UUID,
+    _plexDirectoryUpdatedAt :: !PlexTimestamp,
+    _plexDirectoryCreatedAt :: !PlexTimestamp,
+    _plexDirectoryScannedAt :: !PlexTimestamp,
+    _plexDirectoryContentChangedAt :: !PlexTimestamp,
+    _plexDirectoryHidden :: !Bool,
+    _plexDirectoryLocations :: ![PlexLocation]
+  }
+  deriving (Eq, Show)
+
+data PlexDirectoryType
+  = MovieDirectory
+  | ShowDirectory
+  deriving (Eq, Show, Ord)
+
+foldMapM makeLenses [''Options, ''App, ''PlexDevice, ''PlexLocation, ''PlexDirectory]
 
 foldMapM
   makeWrapped
@@ -123,7 +160,8 @@ foldMapM
     ''PlexPlatform,
     ''PlexClientIdentifier,
     ''DoesNotExist,
-    ''PlexAttributeKey
+    ''PlexAttributeKey,
+    ''PlexId
   ]
 
 instance HasLogFunc App where
