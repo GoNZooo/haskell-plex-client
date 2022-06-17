@@ -84,6 +84,7 @@ library
     , lens
     , qtility
     , rio
+    , uuid
     , xml-conduit
     , xml-lens
   default-language: Haskell2010
@@ -148,6 +149,7 @@ executable plex-client
     , plex-client
     , qtility
     , rio
+    , uuid
     , xml-conduit
     , xml-lens
   default-language: Haskell2010
@@ -214,6 +216,7 @@ test-suite plex-client-test
     , plex-client
     , qtility
     , rio
+    , uuid
     , xml-conduit
     , xml-lens
   default-language: Haskell2010

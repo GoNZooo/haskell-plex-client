@@ -27,6 +27,7 @@ dependencies:
 - xml-conduit
 - xml-lens
 - lens
+- uuid
 
 default-extensions:
 - ApplicativeDo
