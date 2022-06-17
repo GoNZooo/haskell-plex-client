@@ -1,6 +1,7 @@
 module Plex.PlexRequest where
 
 import Control.Lens.Combinators
+import Data.Kind (Type)
 import Data.Typeable (typeRep)
 import Plex.Http (callRoute)
 import Qtility
@@ -9,8 +10,9 @@ import Text.XML
 import Text.XML.Lens
 import Types
 
-class PlexRequest request response | request -> response where
-  executeRequest :: PlexIp -> PlexToken -> request -> IO response
+class PlexRequest request where
+  type ResponseType request :: Type
+  executeRequest :: PlexIp -> PlexToken -> request -> IO (ResponseType request)
 
 data GetDevicesRequest = GetDevicesRequest
 
@@ -22,7 +24,8 @@ data GetLibrariesRequest = GetLibrariesRequest
 newtype GetLibrariesResponse = GetLibrariesResponse {unGetLibrariesResponse :: [PlexDirectory]}
   deriving (Eq, Show)
 
-instance PlexRequest GetDevicesRequest GetDevicesResponse where
+instance PlexRequest GetDevicesRequest where
+  type ResponseType GetDevicesRequest = GetDevicesResponse
   executeRequest ip token _request = do
     document <- callRoute ip token "devices"
     let attributes = document ^.. root . named "MediaContainer" . plate . named "Device" . attrs
