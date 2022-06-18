@@ -20,7 +20,7 @@ data GetDevicesRequest = GetDevicesRequest
 newtype GetDevicesResponse = GetDevicesResponse {unGetDevicesResponse :: [PlexDevice]}
   deriving (Eq, Show)
 
-data GetLibrariesRequest = GetLibrariesRequest
+data GetLibrarySectionsRequest = GetLibrarySectionsRequest
 
 newtype GetLibrariesResponse = GetLibrariesResponse {unGetLibrariesResponse :: [PlexDirectory]}
   deriving (Eq, Show)
@@ -33,8 +33,8 @@ instance PlexRequest GetDevicesRequest where
     devices <- fromEither $ traverse parseDevice attributes
     pure $ GetDevicesResponse devices
 
-instance PlexRequest GetLibrariesRequest where
-  type ResponseType GetLibrariesRequest = GetLibrariesResponse
+instance PlexRequest GetLibrarySectionsRequest where
+  type ResponseType GetLibrarySectionsRequest = GetLibrariesResponse
   executeRequest ip token _request = do
     document <- callRoute ip token "library/sections"
     directories <-
