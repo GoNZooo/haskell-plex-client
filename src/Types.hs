@@ -127,29 +127,42 @@ data PlexLocation = PlexLocation
   }
   deriving (Eq, Show)
 
-data PlexDirectory = PlexDirectory
-  { _plexDirectoryKey :: !PlexKey,
-    _plexDirectoryType :: !PlexDirectoryType,
-    _plexDirectoryThumbnail :: !FilePath,
-    _plexDirectoryTitle :: !Text,
-    _plexDirectoryAgent :: !PlexAgent,
-    _plexDirectoryScanner :: !PlexScanner,
-    _plexDirectoryUuid :: !UUID,
-    _plexDirectoryUpdatedAt :: !PlexTimestamp,
-    _plexDirectoryCreatedAt :: !PlexTimestamp,
-    _plexDirectoryScannedAt :: !PlexTimestamp,
-    _plexDirectoryContentChangedAt :: !PlexTimestamp,
-    _plexDirectoryHidden :: !Bool,
-    _plexDirectoryLocations :: ![PlexLocation]
+data PlexDirectory
+  = PlexMovieDirectory MovieDirectory
+  | PlexShowDirectory ShowDirectory
+  deriving (Eq, Show, Generic)
+
+newtype MovieDirectory = MovieDirectory {unMovieDirectory :: DirectoryPayload}
+  deriving (Eq, Show, Generic)
+
+newtype ShowDirectory = ShowDirectory {unShowDirectory :: DirectoryPayload}
+  deriving (Eq, Show, Generic)
+
+data DirectoryPayload = DirectoryPayload
+  { _directoryPayloadKey :: !PlexKey,
+    _directoryPayloadThumbnail :: !FilePath,
+    _directoryPayloadTitle :: !Text,
+    _directoryPayloadAgent :: !PlexAgent,
+    _directoryPayloadScanner :: !PlexScanner,
+    _directoryPayloadUuid :: !UUID,
+    _directoryPayloadUpdatedAt :: !PlexTimestamp,
+    _directoryPayloadCreatedAt :: !PlexTimestamp,
+    _directoryPayloadScannedAt :: !PlexTimestamp,
+    _directoryPayloadContentChangedAt :: !PlexTimestamp,
+    _directoryPayloadHidden :: !Bool,
+    _directoryPayloadLocations :: ![PlexLocation]
   }
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic)
 
-data PlexDirectoryType
-  = MovieDirectory
-  | ShowDirectory
-  deriving (Eq, Show, Ord)
-
-foldMapM makeLenses [''Options, ''App, ''PlexDevice, ''PlexLocation, ''PlexDirectory]
+foldMapM
+  makeLenses
+  [ ''Options,
+    ''App,
+    ''PlexDevice,
+    ''PlexLocation,
+    ''MovieDirectory,
+    ''ShowDirectory
+  ]
 
 foldMapM
   makeWrapped
@@ -161,7 +174,9 @@ foldMapM
     ''PlexClientIdentifier,
     ''DoesNotExist,
     ''PlexAttributeKey,
-    ''PlexId
+    ''PlexId,
+    ''MovieDirectory,
+    ''ShowDirectory
   ]
 
 instance HasLogFunc App where

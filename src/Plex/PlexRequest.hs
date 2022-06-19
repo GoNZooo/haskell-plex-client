@@ -63,8 +63,25 @@ parseDirectory :: Element -> Either XmlAttributeError PlexDirectory
 parseDirectory element' = do
   locations <- traverse parseLocation $ element' ^.. plate . named "Location" . attrs
   let attributes = element' ^. attrs
+  type' <- getAttribute @Text attributes "type"
+  case type' of
+    "movie" ->
+      (MovieDirectory >>> PlexMovieDirectory) <$> parseDirectoryPayload attributes locations
+    "show" ->
+      (ShowDirectory >>> PlexShowDirectory) <$> parseDirectoryPayload attributes locations
+    value ->
+      Left $
+        XmlAttributeError attributes $
+          UnableToDecodeType $ UnableToDecode "type" value (Just "Unknown directory type")
+
+parseDirectoryPayload ::
+  Map Name Text ->
+  [PlexLocation] ->
+  Either
+    XmlAttributeError
+    DirectoryPayload
+parseDirectoryPayload attributes locations = do
   key' <- PlexKey <$> getAttribute attributes "key"
-  type' <- getAttribute attributes "type" >>= readDirectoryType attributes "type"
   thumbnail <- getAttribute attributes "thumb"
   title <- getAttribute attributes "title"
   agent <- PlexAgent <$> getAttribute attributes "agent"
@@ -76,20 +93,19 @@ parseDirectory element' = do
   contentChangedAt <- PlexTimestamp <$> getAttribute attributes "contentChangedAt"
   hidden <- getAttribute attributes "hidden" >>= numberTextToBool attributes "hidden"
   pure $
-    PlexDirectory
-      { _plexDirectoryKey = key',
-        _plexDirectoryType = type',
-        _plexDirectoryThumbnail = thumbnail,
-        _plexDirectoryTitle = title,
-        _plexDirectoryAgent = agent,
-        _plexDirectoryScanner = scanner,
-        _plexDirectoryUuid = uuid,
-        _plexDirectoryUpdatedAt = updatedAt,
-        _plexDirectoryCreatedAt = createdAt,
-        _plexDirectoryScannedAt = scannedAt,
-        _plexDirectoryContentChangedAt = contentChangedAt,
-        _plexDirectoryHidden = hidden,
-        _plexDirectoryLocations = locations
+    DirectoryPayload
+      { _directoryPayloadKey = key',
+        _directoryPayloadThumbnail = thumbnail,
+        _directoryPayloadTitle = title,
+        _directoryPayloadAgent = agent,
+        _directoryPayloadScanner = scanner,
+        _directoryPayloadUuid = uuid,
+        _directoryPayloadUpdatedAt = updatedAt,
+        _directoryPayloadCreatedAt = createdAt,
+        _directoryPayloadScannedAt = scannedAt,
+        _directoryPayloadContentChangedAt = contentChangedAt,
+        _directoryPayloadHidden = hidden,
+        _directoryPayloadLocations = locations
       }
 
 parseLocation :: Map Name Text -> Either XmlAttributeError PlexLocation
@@ -138,15 +154,6 @@ ensureNonEmpty attributeMap key' textValue value
         attributeMap
         (UnableToDecodeType $ UnableToDecode key' textValue $ Just "value is empty")
   | otherwise = Right value
-
-readDirectoryType :: Map Name Text -> Name -> Text -> Either XmlAttributeError PlexDirectoryType
-readDirectoryType _map' _key' "movie" = Right MovieDirectory
-readDirectoryType _map' _key' "show" = Right ShowDirectory
-readDirectoryType map' key' value =
-  Left $
-    XmlAttributeError map' $
-      UnableToDecodeType $
-        UnableToDecode key' value (Just $ "Unknown PlexDirectoryType: " <> Text.unpack value)
 
 numberTextToBool :: Map Name Text -> Name -> Text -> Either XmlAttributeError Bool
 numberTextToBool _map' _key' "1" = Right True
