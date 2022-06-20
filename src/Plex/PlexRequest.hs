@@ -25,6 +25,19 @@ data GetLibrarySectionsRequest = GetLibrarySectionsRequest
 newtype GetLibrariesResponse = GetLibrariesResponse {unGetLibrariesResponse :: [PlexDirectory]}
   deriving (Eq, Show)
 
+data PlexLibrarySectionType
+  = AllLibrarySection
+  | UnwatchedLibrarySection
+  | NewestLibrarySection
+  | OnDeckLibrarySection
+  | RecentlyAddedLibrarySection
+  | RecentlyViewedLibrarySection
+  | RecentlyViewedShowsLibrarySection
+  deriving (Eq, Show)
+
+newtype GetOnDeckResponse = GetOnDeckResponse {unGetOnDeckResponse :: [PlexEpisode]}
+  deriving (Eq, Show)
+
 instance PlexRequest GetDevicesRequest where
   type ResponseType GetDevicesRequest = GetDevicesResponse
   executeRequest ip token _request = do
@@ -42,6 +55,17 @@ instance PlexRequest GetLibrarySectionsRequest where
         traverse parseDirectory $
           document ^.. root . named "MediaContainer" . plate . named "Directory"
     pure $ GetLibrariesResponse directories
+
+instance PlexRequest GetOnDeckRequest where
+  type ResponseType GetOnDeckRequest = GetOnDeckResponse
+  executeRequest ip token request = do
+    document <-
+      callRoute ip token $
+        "library/sections/" <> show (request ^. unwrap . unwrap)
+          <> "/onDeck"
+    let attributes = document ^.. root . named "MediaContainer" . plate . named "Video" . attrs
+    episodes <- fromEither $ traverse parseEpisode attributes
+    pure $ GetOnDeckResponse episodes
 
 parseDevice :: Map Name Text -> Either XmlAttributeError PlexDevice
 parseDevice attributeMap = do
@@ -113,6 +137,20 @@ parseLocation attributeMap = do
   id' <- PlexId <$> getAttribute attributeMap "id"
   path <- getAttribute attributeMap "path"
   pure $ PlexLocation {_plexLocationId = id', _plexLocationPath = path}
+
+parseEpisode :: Map Name Text -> Either XmlAttributeError PlexEpisode
+parseEpisode attributes = do
+  title <- EpisodeTitle <$> getAttribute attributes "title"
+  summary <- EpisodeSummary <$> getAttribute attributes "summary"
+  showName <- ShowName <$> getAttribute attributes "grandparentTitle"
+  season <- EpisodeSeason <$> getAttribute attributes "parentTitle"
+  pure $
+    PlexEpisode
+      { _plexEpisodeTitle = title,
+        _plexEpisodeSummary = summary,
+        _plexEpisodeShow = showName,
+        _plexEpisodeSeason = season
+      }
 
 getAttribute ::
   forall a.

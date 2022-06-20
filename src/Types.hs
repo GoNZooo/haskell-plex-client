@@ -98,6 +98,26 @@ newtype PlexPlatform = PlexPlatform {unPlexPlatform :: Text}
 newtype PlexKey = PlexKey {unPlexKey :: String}
   deriving (Eq, Show, Read, IsString, Generic)
 
+data PlexEpisode = PlexEpisode
+  { _plexEpisodeTitle :: !EpisodeTitle,
+    _plexEpisodeSummary :: !EpisodeSummary,
+    _plexEpisodeShow :: !ShowName,
+    _plexEpisodeSeason :: !EpisodeSeason
+  }
+  deriving (Eq, Show)
+
+newtype EpisodeTitle = EpisodeTitle {unEpisodeTitle :: Text}
+  deriving (Eq, Show, Read, IsString, Generic)
+
+newtype EpisodeSummary = EpisodeSummary {unEpisodeSummary :: Text}
+  deriving (Eq, Show, Read, IsString, Generic)
+
+newtype ShowName = ShowName {unShowName :: Text}
+  deriving (Eq, Show, Read, IsString, Generic)
+
+newtype EpisodeSeason = EpisodeSeason {unEpisodeSeason :: Text}
+  deriving (Eq, Show, Read, IsString, Generic)
+
 -- | Command line arguments
 data Options = Options
   { _optionsVerbose :: !Bool,
@@ -154,6 +174,9 @@ data DirectoryPayload = DirectoryPayload
   }
   deriving (Eq, Show, Generic)
 
+newtype GetOnDeckRequest = GetOnDeckRequest {unGetOnDeckRequest :: PlexId}
+  deriving (Eq, Show)
+
 foldMapM
   makeLenses
   [ ''Options,
@@ -176,7 +199,12 @@ foldMapM
     ''PlexAttributeKey,
     ''PlexId,
     ''MovieDirectory,
-    ''ShowDirectory
+    ''ShowDirectory,
+    ''EpisodeTitle,
+    ''EpisodeSummary,
+    ''ShowName,
+    ''EpisodeSeason,
+    ''GetOnDeckRequest
   ]
 
 instance HasLogFunc App where
