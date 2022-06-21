@@ -44,6 +44,17 @@ instance PlexRequest GetOnDeckRequest where
     episodes <- fromEither $ traverse parseEpisode attributes
     pure $ GetOnDeckResponse episodes
 
+instance PlexRequest GetUnwatchedRequest where
+  type ResponseType GetUnwatchedRequest = GetUnwatchedResponse
+  executeRequest ip token request = do
+    document <-
+      callRoute ip token $ "library/sections/" <> show (request ^. unwrap . unwrap) <> "/unwatched"
+    directories <-
+      fromEither $
+        traverse parseSectionDirectory $
+          document ^.. root . named "MediaContainer" . plate . named "Directory"
+    pure $ GetUnwatchedResponse directories
+
 parseDevice :: Map Name Text -> Either XmlAttributeError PlexDevice
 parseDevice attributeMap = do
   deviceId <- getAttribute attributeMap "id"
@@ -67,9 +78,9 @@ parseDirectory element' = do
   type' <- getAttribute @Text attributes "type"
   case type' of
     "movie" ->
-      (MovieDirectory >>> PlexMovieDirectory) <$> parseDirectoryPayload attributes locations
+      PlexMovieDirectory <$> parseDirectoryPayload attributes locations
     "show" ->
-      (ShowDirectory >>> PlexShowDirectory) <$> parseDirectoryPayload attributes locations
+      PlexShowDirectory <$> parseDirectoryPayload attributes locations
     value ->
       Left $
         XmlAttributeError attributes $
@@ -78,9 +89,7 @@ parseDirectory element' = do
 parseDirectoryPayload ::
   Map Name Text ->
   [PlexLocation] ->
-  Either
-    XmlAttributeError
-    DirectoryPayload
+  Either XmlAttributeError DirectoryPayload
 parseDirectoryPayload attributes locations = do
   key' <- PlexKey <$> getAttribute attributes "key"
   thumbnail <- getAttribute attributes "thumb"
@@ -109,6 +118,40 @@ parseDirectoryPayload attributes locations = do
         _directoryPayloadLocations = locations
       }
 
+parseSectionDirectory :: Element -> Either XmlAttributeError PlexSectionDirectory
+parseSectionDirectory element' = do
+  let attributes = element' ^. attrs
+  type' <- getAttribute @Text attributes "type"
+  case type' of
+    "movie" ->
+      PlexSectionMovieDirectory <$> parseSectionDirectoryPayload attributes
+    "show" ->
+      PlexSectionShowDirectory <$> parseSectionDirectoryPayload attributes
+    value ->
+      Left $
+        XmlAttributeError attributes $
+          UnableToDecodeType $ UnableToDecode "type" value (Just "Unknown section directory type")
+
+parseSectionDirectoryPayload :: Map Name Text -> Either XmlAttributeError SectionDirectoryPayload
+parseSectionDirectoryPayload attributes = do
+  key' <- PlexKey <$> getAttribute attributes "key"
+  title <- getAttribute attributes "title"
+  summary <- MediaSummary <$> getAttribute attributes "summary"
+  audienceRating <- AudienceRating <$> getAttribute attributes "audienceRating"
+  year <- Year <$> getAttribute attributes "year"
+  episodeCount <- EpisodeCount <$> getAttribute attributes "leafCount"
+  viewedCount <- EpisodeCount <$> getAttribute attributes "viewedLeafCount"
+  pure $
+    SectionDirectoryPayload
+      { _sectionDirectoryPayloadKey = key',
+        _sectionDirectoryPayloadTitle = title,
+        _sectionDirectoryPayloadSummary = summary,
+        _sectionDirectoryPayloadAudienceRating = audienceRating,
+        _sectionDirectoryPayloadYear = year,
+        _sectionDirectoryPayloadEpisodeCount = episodeCount,
+        _sectionDirectoryPayloadViewedCount = viewedCount
+      }
+
 parseLocation :: Map Name Text -> Either XmlAttributeError PlexLocation
 parseLocation attributeMap = do
   id' <- PlexId <$> getAttribute attributeMap "id"
@@ -118,7 +161,7 @@ parseLocation attributeMap = do
 parseEpisode :: Map Name Text -> Either XmlAttributeError PlexEpisode
 parseEpisode attributes = do
   title <- EpisodeTitle <$> getAttribute attributes "title"
-  summary <- EpisodeSummary <$> getAttribute attributes "summary"
+  summary <- MediaSummary <$> getAttribute attributes "summary"
   showName <- ShowName <$> getAttribute attributes "grandparentTitle"
   season <- EpisodeSeason <$> getAttribute attributes "parentTitle"
   pure $
@@ -150,6 +193,18 @@ getAttribute attributeMap key' = do
         (UnableToDecodeType $ UnableToDecode key' value reason)
     )
     $ readAttribute value
+
+maybeGetAttribute ::
+  forall a.
+  (PlexAttributeRead a, Typeable a) =>
+  Map Name Text ->
+  Name ->
+  Either XmlAttributeError (Maybe a)
+maybeGetAttribute attributeMap key' = do
+  case getAttribute attributeMap key' of
+    Right v -> Right $ Just v
+    Left (XmlAttributeError _ (DoesNotExistType _)) -> Right Nothing
+    Left e -> Left e
 
 emptyToNothing :: Text -> Maybe Text
 emptyToNothing "" = Nothing

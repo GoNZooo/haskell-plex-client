@@ -56,6 +56,12 @@ instance PlexAttributeRead Int where
 instance PlexAttributeRead Integer where
   readAttribute = Text.unpack >>> readMaybe
 
+instance PlexAttributeRead Float where
+  readAttribute = Text.unpack >>> readMaybe
+
+instance PlexAttributeRead Double where
+  readAttribute = Text.unpack >>> readMaybe
+
 instance PlexAttributeRead Bool where
   readAttribute = Text.unpack >>> readMaybe
 
@@ -100,7 +106,7 @@ newtype PlexKey = PlexKey {unPlexKey :: String}
 
 data PlexEpisode = PlexEpisode
   { _plexEpisodeTitle :: !EpisodeTitle,
-    _plexEpisodeSummary :: !EpisodeSummary,
+    _plexEpisodeSummary :: !MediaSummary,
     _plexEpisodeShow :: !ShowName,
     _plexEpisodeSeason :: !EpisodeSeason
   }
@@ -109,7 +115,7 @@ data PlexEpisode = PlexEpisode
 newtype EpisodeTitle = EpisodeTitle {unEpisodeTitle :: Text}
   deriving (Eq, Show, Read, IsString, Generic)
 
-newtype EpisodeSummary = EpisodeSummary {unEpisodeSummary :: Text}
+newtype MediaSummary = MediaSummary {unMediaSummary :: Text}
   deriving (Eq, Show, Read, IsString, Generic)
 
 newtype ShowName = ShowName {unShowName :: Text}
@@ -117,6 +123,15 @@ newtype ShowName = ShowName {unShowName :: Text}
 
 newtype EpisodeSeason = EpisodeSeason {unEpisodeSeason :: Text}
   deriving (Eq, Show, Read, IsString, Generic)
+
+newtype AudienceRating = AudienceRating {unAudienceRating :: Float}
+  deriving (Eq, Show, Read, Generic)
+
+newtype Year = Year {unYear :: Int}
+  deriving (Eq, Show, Read, Generic)
+
+newtype EpisodeCount = EpisodeCount {unEpisodeCount :: Int}
+  deriving (Eq, Show, Read, Generic)
 
 -- | Command line arguments
 data Options = Options
@@ -148,14 +163,13 @@ data PlexLocation = PlexLocation
   deriving (Eq, Show)
 
 data PlexDirectory
-  = PlexMovieDirectory MovieDirectory
-  | PlexShowDirectory ShowDirectory
+  = PlexMovieDirectory !DirectoryPayload
+  | PlexShowDirectory !DirectoryPayload
   deriving (Eq, Show, Generic)
 
-newtype MovieDirectory = MovieDirectory {unMovieDirectory :: DirectoryPayload}
-  deriving (Eq, Show, Generic)
-
-newtype ShowDirectory = ShowDirectory {unShowDirectory :: DirectoryPayload}
+data PlexSectionDirectory
+  = PlexSectionMovieDirectory !SectionDirectoryPayload
+  | PlexSectionShowDirectory !SectionDirectoryPayload
   deriving (Eq, Show, Generic)
 
 data DirectoryPayload = DirectoryPayload
@@ -174,7 +188,27 @@ data DirectoryPayload = DirectoryPayload
   }
   deriving (Eq, Show, Generic)
 
+data SectionDirectoryPayload = SectionDirectoryPayload
+  { _sectionDirectoryPayloadKey :: !PlexKey,
+    _sectionDirectoryPayloadTitle :: !Text,
+    _sectionDirectoryPayloadSummary :: !MediaSummary,
+    _sectionDirectoryPayloadAudienceRating :: !AudienceRating,
+    _sectionDirectoryPayloadYear :: !Year,
+    _sectionDirectoryPayloadEpisodeCount :: !EpisodeCount,
+    _sectionDirectoryPayloadViewedCount :: !EpisodeCount
+  }
+  deriving (Eq, Show, Generic)
+
 newtype GetOnDeckRequest = GetOnDeckRequest {unGetOnDeckRequest :: PlexId}
+  deriving (Eq, Show)
+
+newtype GetOnDeckResponse = GetOnDeckResponse {unGetOnDeckResponse :: [PlexEpisode]}
+  deriving (Eq, Show)
+
+newtype GetUnwatchedRequest = GetUnwatchedRequest {unGetUnwatchedRequest :: PlexId}
+  deriving (Eq, Show)
+
+newtype GetUnwatchedResponse = GetUnwatchedResponse {unGetUnwatchedResponse :: [PlexSectionDirectory]}
   deriving (Eq, Show)
 
 data GetDevicesRequest = GetDevicesRequest
@@ -197,17 +231,12 @@ data PlexLibrarySectionType
   | RecentlyViewedShowsLibrarySection
   deriving (Eq, Show)
 
-newtype GetOnDeckResponse = GetOnDeckResponse {unGetOnDeckResponse :: [PlexEpisode]}
-  deriving (Eq, Show)
-
 foldMapM
   makeLenses
   [ ''Options,
     ''App,
     ''PlexDevice,
-    ''PlexLocation,
-    ''MovieDirectory,
-    ''ShowDirectory
+    ''PlexLocation
   ]
 
 foldMapM
@@ -221,13 +250,14 @@ foldMapM
     ''DoesNotExist,
     ''PlexAttributeKey,
     ''PlexId,
-    ''MovieDirectory,
-    ''ShowDirectory,
     ''EpisodeTitle,
-    ''EpisodeSummary,
+    ''MediaSummary,
     ''ShowName,
     ''EpisodeSeason,
-    ''GetOnDeckRequest
+    ''GetOnDeckRequest,
+    ''GetOnDeckResponse,
+    ''GetUnwatchedRequest,
+    ''GetUnwatchedResponse
   ]
 
 instance HasLogFunc App where
