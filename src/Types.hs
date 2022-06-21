@@ -177,6 +177,29 @@ data DirectoryPayload = DirectoryPayload
 newtype GetOnDeckRequest = GetOnDeckRequest {unGetOnDeckRequest :: PlexId}
   deriving (Eq, Show)
 
+data GetDevicesRequest = GetDevicesRequest
+
+newtype GetDevicesResponse = GetDevicesResponse {unGetDevicesResponse :: [PlexDevice]}
+  deriving (Eq, Show)
+
+data GetLibrarySectionsRequest = GetLibrarySectionsRequest
+
+newtype GetLibrariesResponse = GetLibrariesResponse {unGetLibrariesResponse :: [PlexDirectory]}
+  deriving (Eq, Show)
+
+data PlexLibrarySectionType
+  = AllLibrarySection
+  | UnwatchedLibrarySection
+  | NewestLibrarySection
+  | OnDeckLibrarySection
+  | RecentlyAddedLibrarySection
+  | RecentlyViewedLibrarySection
+  | RecentlyViewedShowsLibrarySection
+  deriving (Eq, Show)
+
+newtype GetOnDeckResponse = GetOnDeckResponse {unGetOnDeckResponse :: [PlexEpisode]}
+  deriving (Eq, Show)
+
 foldMapM
   makeLenses
   [ ''Options,

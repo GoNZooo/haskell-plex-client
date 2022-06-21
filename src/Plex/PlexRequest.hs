@@ -15,29 +15,6 @@ class PlexRequest request where
   type ResponseType request :: Type
   executeRequest :: PlexIp -> PlexToken -> request -> IO (ResponseType request)
 
-data GetDevicesRequest = GetDevicesRequest
-
-newtype GetDevicesResponse = GetDevicesResponse {unGetDevicesResponse :: [PlexDevice]}
-  deriving (Eq, Show)
-
-data GetLibrarySectionsRequest = GetLibrarySectionsRequest
-
-newtype GetLibrariesResponse = GetLibrariesResponse {unGetLibrariesResponse :: [PlexDirectory]}
-  deriving (Eq, Show)
-
-data PlexLibrarySectionType
-  = AllLibrarySection
-  | UnwatchedLibrarySection
-  | NewestLibrarySection
-  | OnDeckLibrarySection
-  | RecentlyAddedLibrarySection
-  | RecentlyViewedLibrarySection
-  | RecentlyViewedShowsLibrarySection
-  deriving (Eq, Show)
-
-newtype GetOnDeckResponse = GetOnDeckResponse {unGetOnDeckResponse :: [PlexEpisode]}
-  deriving (Eq, Show)
-
 instance PlexRequest GetDevicesRequest where
   type ResponseType GetDevicesRequest = GetDevicesResponse
   executeRequest ip token _request = do
