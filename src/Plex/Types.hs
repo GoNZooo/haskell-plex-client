@@ -1,6 +1,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 
-module Types where
+module Plex.Types where
 
 import Qtility
 import RIO.Process (HasProcessContext (..), ProcessContext)

@@ -5,11 +5,11 @@ import Data.Kind (Type)
 import Data.Typeable (typeRep)
 import qualified Data.UUID as UUID
 import Plex.Http (callRoute)
+import Plex.Types
 import Qtility
 import qualified RIO.Text as Text
 import Text.XML
 import Text.XML.Lens
-import Types
 
 class PlexRequest request where
   type ResponseType request :: Type

@@ -4,9 +4,9 @@ module Main (main) where
 
 import Options.Applicative.Simple
 import qualified Paths_plex_client
+import Plex.Types
 import Qtility
 import Run
-import Types
 
 main :: IO ()
 main = do

@@ -1,8 +1,8 @@
 module Run (run) where
 
+import Plex.Types
 import Qtility
 import RIO.Process (mkDefaultProcessContext)
-import Types
 
 run :: Options -> IO ()
 run options = do

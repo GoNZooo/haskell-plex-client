@@ -2,9 +2,9 @@ module Plex.Http where
 
 import Network.HTTP.Client (Response (..), httpLbs, parseRequest)
 import Network.HTTP.Client.TLS (newTlsManager)
+import Plex.Types
 import Qtility
 import Text.XML (Document, def, parseLBS)
-import Types
 
 callRoute :: (MonadIO m, MonadThrow m) => PlexIp -> PlexToken -> String -> m Document
 callRoute ip token route = do
