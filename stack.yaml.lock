@@ -5,21 +5,21 @@
 
 packages:
 - completed:
-    size: 59888
+    size: 59907
     subdir: qtility
-    url: https://github.com/quanterall/qtility/archive/01c4fc42756611da9d3dc04e9ac71ece6ae67268.tar.gz
+    url: https://github.com/quanterall/qtility/archive/feebd3658c48ca15caea9007f2a545019a246521.tar.gz
     name: qtility
     version: 1.3.0
-    sha256: 88b2b13960e9686cceeabe358e4383ab84a5e55daafb4b0afa78e8d21755b980
+    sha256: 62dc0e6268b21ee6acad450b0d89e747fed123a97bede7d809370e4c7e0f74ea
     pantry-tree:
       size: 1657
-      sha256: 280cd4841dacd16979967feeba251d81ddc2a6b49ce6e63ed426b1d45426f7e2
+      sha256: 3b82085b41c38d5895b0ed6561eb2e35e1aa308483def52d04825ec25377f6be
   original:
     subdir: qtility
-    url: https://github.com/quanterall/qtility/archive/01c4fc42756611da9d3dc04e9ac71ece6ae67268.tar.gz
+    url: https://github.com/quanterall/qtility/archive/feebd3658c48ca15caea9007f2a545019a246521.tar.gz
 snapshots:
 - completed:
-    size: 586069
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/18/14.yaml
-    sha256: 87842ecbaa8ca9cee59a7e6be52369dbed82ed075cb4e0d152614a627e8fd488
-  original: lts-18.14
+    size: 590100
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/18/28.yaml
+    sha256: 428ec8d5ce932190d3cbe266b9eb3c175cd81e984babf876b64019e2cbe4ea68
+  original: lts-18.28
